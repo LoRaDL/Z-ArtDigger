@@ -1,0 +1,13 @@
+__pycache__
+.demo_fetch
+.hypothesis
+.kiro
+.git_bak
+.pytest_cache
+
+tests
+outputs/
+db/
+cookies/
+image_cache/
+config.toml

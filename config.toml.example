@@ -1,0 +1,59 @@
+# fanart-crawler configuration template
+# All fields are optional; omitted fields will fall back to safe generic defaults.
+
+[crawler]
+# EMA smoothing coefficient for score propagation (0.0–1.0)
+alpha = 0.3
+
+# Maximum recursion depth for derived tasks
+max_depth = 5
+
+# Sliding window size (articles per process_task call)
+mini_batch = 20
+
+# Fixed API fetch size (X platform maximum per request: 20 based on requirement)
+api_fetch_size = 20
+
+# Optional HTTP proxy
+# proxy = "http://127.0.0.1:10808"
+
+
+[storage]
+# Output directory for JSON metadata
+output_dir = "outputs"
+
+# Local image cache directory (keyed by media_id)
+image_cache_dir = "image_cache"
+
+# SQLite database path (TimelineIslandsDB + ScanProgressDB)
+sqlite_db_path = "./db/crawler.db"
+
+# Redis connection URL (CrawlerTaskPool + ClassificationCacheDB)
+redis_url = "redis://localhost:6379/0"
+
+# External gallery database path (optional, used for URL exact matching and pHash visual matching; leave empty to skip L1 and L2 classification steps)
+gallery_db_path = ""
+
+
+[vision_llm]
+# VisionLLM API endpoint URL
+url = "http://localhost:1234/v1/chat/completions"
+
+# VisionLLM API Key (leave empty for local models if no authentication is required)
+api_key = ""
+
+# VisionLLM Model Name
+model = "generic-vision-model"
+
+# Max concurrent workers for LLM requests
+max_workers = 4
+
+# Max edge size for image resizing before LLM analysis
+max_long_edge = 800
+
+# Level 3 VisionLLM classification prompt
+# Customize this to target specific topics (e.g. specific characters, styles)
+prompt = """You are an image classification expert. Analyze the image and perform classification.
+To facilitate program parsing, the final word of your response must conclude with either [yes] or [no].
+If the image is a direct fanart portraying Judy, Nick, or other typical Zootopia main characters (e.g. Finnick, Gary), classify it as [yes].
+If the image is completely unrelated to Zootopia characters, classify it as [no]."""
