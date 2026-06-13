@@ -84,6 +84,9 @@ class DBFiller:
         finally:
             self._report_status(req.author, None)
             req.event.set()
+            with self._lock:
+                if req in self._pending_requests:
+                    self._pending_requests.remove(req)
             self._check_satisfied_all()
             try:
                 self._queue.task_done()
@@ -181,32 +184,35 @@ class DBFiller:
         
         MAX_BRIDGE = 5
         cursor = start_id
+        hit_newest = False
         for _ in range(MAX_BRIDGE):
             req_obj = APIRequest(author=req.author, from_id=cursor)
             raw = self._api_pool.submit(req_obj, score=req.score)
             if not raw:
                 # 无法继续向上建立连接
+                hit_newest = True
                 break
             
             articles = aggregate_articles(raw)
-            # 判定 newest_boundary: 简化处理
-            newest_b = False
             
             # 使用 extend_to=cursor 确保孤岛边界能顶到我们的扫描起跳点
-            self._db.insert(req.author, articles, newest_boundary=newest_b, extend_to=cursor)
+            self._db.insert(req.author, articles, newest_checked_at=0.0, extend_to=cursor)
             
             # 检查是否接续
-            current_island = self._db.find_island(req.author, req.anchor_id)
-            if current_island:
-                oldest_in_this_scan = min(t['rest_id'] for t in raw)
-                if int(oldest_in_this_scan) <= current_island.max_id:
-                    # 连接成功！
-                    break
+            if req.is_satisfied(self._db):
+                break
             
             cursor = int(min(t['rest_id'] for t in raw))
             # 防止死循环：如果 cursor 已经扫到 anchor_id 之前了，也该停
             if cursor <= req.anchor_id:
                 break
+        else:
+            if not req.is_satisfied(self._db):
+                hit_newest = True
+                
+        if hit_newest:
+            # 标记最新端已探索，避免反复无效扫描
+            self._db.insert(req.author, [], newest_checked_at=time.time(), extend_to=req.anchor_id)
 
     def _check_satisfied_all(self) -> None:
         """遍历所有 pending 任务，如果已满足则唤醒。"""

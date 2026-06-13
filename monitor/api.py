@@ -169,7 +169,7 @@ async def get_author_islands(author: str):
                 "min_id": str(r.min_id),
                 "max_id": str(r.max_id),
                 "oldest": r.oldest_boundary,
-                "newest": r.newest_boundary,
+                "newest": not r.should_explore_newer(),
                 "image_count": img_count
             })
         return result
@@ -199,7 +199,7 @@ async def get_timeline_data():
                     "min_id": str(r.min_id),
                     "max_id": str(r.max_id),
                     "oldest": r.oldest_boundary,
-                    "newest": r.newest_boundary,
+                    "newest": not r.should_explore_newer(),
                     "image_count": img_count
                 })
             

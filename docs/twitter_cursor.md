@@ -1,5 +1,8 @@
 # Twitter GraphQL UserTweets Cursor 逆向分析
 
+## !!!以下内容已经失效，最新的测试发现不能向新方向翻页，以下的新方向翻页为错误结论。
+
+
 ## 背景
 
 Twitter 的 `UserTweets` GraphQL 接口（`/graphql/.../UserTweets`）通过 cursor 实现翻页。

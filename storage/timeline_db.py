@@ -42,7 +42,7 @@ CREATE TABLE IF NOT EXISTS island_ranges (
     min_id           INTEGER NOT NULL,
     max_id           INTEGER NOT NULL,
     oldest_boundary  INTEGER DEFAULT 0,
-    newest_boundary  INTEGER DEFAULT 0,
+    newest_checked_at REAL DEFAULT 0.0,
     PRIMARY KEY (author, min_id)
 );
 """
@@ -173,7 +173,7 @@ class TimelineIslandsDB:
 
     def _load_sorted_list(self, author: str) -> SortedList:
         rows = self._conn.execute(
-            "SELECT min_id, max_id, oldest_boundary, newest_boundary "
+            "SELECT min_id, max_id, oldest_boundary, newest_checked_at "
             "FROM island_ranges WHERE author = ? ORDER BY min_id",
             (author,),
         ).fetchall()
@@ -183,16 +183,16 @@ class TimelineIslandsDB:
                 min_id=row["min_id"],
                 max_id=row["max_id"],
                 oldest_boundary=bool(row["oldest_boundary"]),
-                newest_boundary=bool(row["newest_boundary"]),
+                newest_checked_at=float(row["newest_checked_at"]),
             ))
         return sl
 
     def _save_sorted_list(self, author: str, sl: SortedList) -> None:
         self._conn.execute("DELETE FROM island_ranges WHERE author = ?", (author,))
         self._conn.executemany(
-            "INSERT INTO island_ranges (author, min_id, max_id, oldest_boundary, newest_boundary) "
+            "INSERT INTO island_ranges (author, min_id, max_id, oldest_boundary, newest_checked_at) "
             "VALUES (?, ?, ?, ?, ?)",
-            [(author, r.min_id, r.max_id, int(r.oldest_boundary), int(r.newest_boundary))
+            [(author, r.min_id, r.max_id, int(r.oldest_boundary), r.newest_checked_at)
              for r in sl],
         )
 
@@ -202,7 +202,7 @@ class TimelineIslandsDB:
 
     def insert(self, author: str, articles: list[Article],
                oldest_boundary: bool = False,
-               newest_boundary: bool = False,
+               newest_checked_at: float = 0.0,
                extend_to: int | None = None) -> None:
         """
         Insert articles and update IslandRange for author.
@@ -220,7 +220,7 @@ class TimelineIslandsDB:
                 min_id=min(tweet_ids),
                 max_id=max(tweet_ids),
                 oldest_boundary=oldest_boundary,
-                newest_boundary=newest_boundary,
+                newest_checked_at=newest_checked_at,
             )
 
             with self._conn:

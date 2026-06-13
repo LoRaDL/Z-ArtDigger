@@ -2,6 +2,7 @@
 Data models for the fanart-crawler system.
 """
 from __future__ import annotations
+import time
 from dataclasses import dataclass, field
 
 
@@ -41,7 +42,13 @@ class IslandRange:
     min_id: int
     max_id: int
     oldest_boundary: bool = False   # 此端已是博主时间线最旧端
-    newest_boundary: bool = False   # 此端已是博主时间线最新端
+    newest_checked_at: float = 0.0  # 此端最近一次检查是否为最新端的时间戳（0.0表示从未检查）
+
+    def should_explore_newer(self, ttl_seconds: float = 21600.0) -> bool:
+        """检查是否需要向最新端探索。如果从未检查过，或距离上次检查已超过 TTL，则返回 True。"""
+        if self.newest_checked_at == 0.0:
+            return True
+        return (time.time() - self.newest_checked_at) >= ttl_seconds
 
     def overlaps_or_adjacent(self, other: 'IslandRange') -> bool:
         """
@@ -68,17 +75,17 @@ class IslandRange:
         else:
             ob = self.oldest_boundary or other.oldest_boundary
 
-        # newest_boundary: True if the side with the larger max_id had it
+        # newest_checked_at: Take from the side with the larger max_id
         if self.max_id > other.max_id:
-            nb = self.newest_boundary
+            nca = self.newest_checked_at
         elif other.max_id > self.max_id:
-            nb = other.newest_boundary
+            nca = other.newest_checked_at
         else:
-            nb = self.newest_boundary or other.newest_boundary
+            nca = max(self.newest_checked_at, other.newest_checked_at)
 
         return IslandRange(
             min_id=merged_min,
             max_id=merged_max,
             oldest_boundary=ob,
-            newest_boundary=nb,
+            newest_checked_at=nca,
         )

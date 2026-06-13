@@ -68,7 +68,7 @@ def fetch_near_articles(
         center_p = [p for p in image_posts if p.tweet_id == center_id]
         
         # 检查是否满足
-        need_n = max(0, n // 2 - len(newer)) if not island.newest_boundary else 0
+        need_n = max(0, n // 2 - len(newer)) if island.should_explore_newer() else 0
         need_o = max(0, n // 2 - len(older)) if not island.oldest_boundary else 0
         
         if need_n == 0 and need_o == 0:
@@ -99,7 +99,14 @@ def fetch_near_articles(
     image_posts = sorted([p for p in all_posts if has_image(p)], key=lambda p: p.tweet_id, reverse=True)
     
     # 简单的截断逻辑
-    return image_posts[:n]
+    newer = [p for p in image_posts if p.tweet_id > center_id]
+    older = [p for p in image_posts if p.tweet_id < center_id]
+    center_p = [p for p in image_posts if p.tweet_id == center_id]
+    
+    final = newer[-(n // 2):] if newer else []
+    final += center_p
+    final += older[:(n // 2)] if older else []
+    return final
 
 
 def shift_artwork_id(
@@ -150,7 +157,7 @@ def shift_artwork_id(
                 needed = abs(target_idx)
                 req = FillRequest(author, anchor_id=island.min_id, direction=-1, count=needed, score=score)
             else:
-                if island.newest_boundary: return image_posts[-1].tweet_id
+                if not island.should_explore_newer(): return image_posts[-1].tweet_id
                 needed = target_idx - len(image_posts) + 1
                 req = FillRequest(author, anchor_id=island.max_id, direction=+1, count=needed, score=score)
             

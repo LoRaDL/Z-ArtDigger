@@ -34,7 +34,7 @@ class FillRequest:
             actual = db.count_has_image_in_range(
                 self.author, self.anchor_id + 1, island.max_id
             )
-            return actual >= self.count or island.newest_boundary
+            return actual >= self.count or not island.should_explore_newer()
         else:
             actual = db.count_has_image_in_range(
                 self.author, island.min_id, self.anchor_id - 1
