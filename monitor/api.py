@@ -18,12 +18,9 @@ sys.path.append(os.getcwd())
 from storage.timeline_db import TimelineIslandsDB
 
 def get_output_dir() -> Path:
-    try:
-        with open(PROJECT_ROOT / "config.toml", "rb") as f:
-            cfg = tomllib.load(f)
-            return PROJECT_ROOT / cfg.get("output_dir", "output")
-    except Exception:
-        return PROJECT_ROOT / "output"
+    with open(PROJECT_ROOT / "config.toml", "rb") as f:
+        cfg = tomllib.load(f)
+    return PROJECT_ROOT / cfg["storage"]["output_dir"]
 
 from core.config import CrawlerConfig
 

@@ -11,3 +11,4 @@ db/
 cookies/
 image_cache/
 config.toml
+dump.rdb
